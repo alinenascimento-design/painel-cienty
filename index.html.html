@@ -391,7 +391,14 @@ async function loadData() {
       })
     );
     if (rawRows[0] && String(rawRows[0][0]).toLowerCase().includes('cnpj')) rawRows.shift();
-    rawRows = rawRows.filter(r => String(r[0]||'').trim() !== '');
+    // Mantém todas as linhas com pelo menos telefone ou email preenchido (leads sem cadastro)
+    rawRows = rawRows.filter(r => {
+      const cnpj  = String(r[C.CNPJ]  ||'').trim();
+      const fone  = String(r[C.FONE]  ||'').trim();
+      const email = String(r[C.EMAIL] ||'').trim();
+      const nome  = String(r[C.NOME]  ||'').trim();
+      return cnpj || fone || email || nome;
+    });
     buildFilters();
     renderAll();
     document.getElementById('last-update').textContent = 'Atualizado: ' + new Date().toLocaleTimeString('pt-BR');
