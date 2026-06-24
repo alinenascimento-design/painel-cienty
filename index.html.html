@@ -391,14 +391,8 @@ async function loadData() {
       })
     );
     if (rawRows[0] && String(rawRows[0][0]).toLowerCase().includes('cnpj')) rawRows.shift();
-    // Mantém todas as linhas com pelo menos telefone ou email preenchido (leads sem cadastro)
-    rawRows = rawRows.filter(r => {
-      const cnpj  = String(r[C.CNPJ]  ||'').trim();
-      const fone  = String(r[C.FONE]  ||'').trim();
-      const email = String(r[C.EMAIL] ||'').trim();
-      const nome  = String(r[C.NOME]  ||'').trim();
-      return cnpj || fone || email || nome;
-    });
+    // Lead = qualquer linha com coluna A preenchida
+    rawRows = rawRows.filter(r => String(r[0]||'').trim() !== '');
     buildFilters();
     renderAll();
     document.getElementById('last-update').textContent = 'Atualizado: ' + new Date().toLocaleTimeString('pt-BR');
@@ -663,7 +657,8 @@ function renderTblCruzamento(rows) {
   top10.forEach(([lead,{rows:lrs,byOrig}],idx)=>{
     const gid='grp-'+idx;
     const totalLeads=lrs.length;
-    const cadastros=lrs.filter(r=>String(r[C.CNPJ]||'').trim()&&String(r[C.DT_CAD]||'').trim());
+    // Cadastro = tem Data Cadastro Plataforma (coluna R)
+    const cadastros=lrs.filter(r=>String(r[C.DT_CAD]||'').trim());
     const sc=funnelStats(cadastros);
     const pctConv=totalLeads?(cadastros.length/totalLeads*100):0;
     const convCls=pctConv>=60?'pct-high':pctConv>=30?'pct-mid':'pct-low';
@@ -679,7 +674,7 @@ function renderTblCruzamento(rows) {
     </tr>`);
     Object.entries(byOrig).sort((a,b)=>b[1].length-a[1].length).forEach(([sist,srs])=>{
       const subLeads=srs.length;
-      const subCad=srs.filter(r=>String(r[C.CNPJ]||'').trim()&&String(r[C.DT_CAD]||'').trim());
+      const subCad=srs.filter(r=>String(r[C.DT_CAD]||'').trim());
       const ss=funnelStats(subCad);
       const spct=subLeads?(subCad.length/subLeads*100):0;
       const scls=spct>=60?'pct-high':spct>=30?'pct-mid':'pct-low';
@@ -712,8 +707,10 @@ function renderTblOrigem(rows) {
   rows.forEach(r=>{
     const lead=String(r[C.ORIG_LEAD]||'').trim()||'Não Informado';
     if (!map[lead]) map[lead]={leads:[],cadastros:[]};
+    // Lead = coluna A preenchida (já garantido pelo filtro de rawRows)
     map[lead].leads.push(r);
-    if (String(r[C.CNPJ]||'').trim()&&String(r[C.DT_CAD]||'').trim()) map[lead].cadastros.push(r);
+    // Cadastro = coluna A preenchida + Data Cadastro Plataforma (coluna R)
+    if (String(r[C.DT_CAD]||'').trim()) map[lead].cadastros.push(r);
   });
   const groups=Object.entries(map).filter(([,{leads}])=>leads.length>=minLeads).sort((a,b)=>b[1].leads.length-a[1].leads.length);
   const tbody=document.querySelector('#tbl-origem tbody');
