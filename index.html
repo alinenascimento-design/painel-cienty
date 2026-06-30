@@ -186,7 +186,7 @@ tbody td{padding:10px 16px;font-size:13px}
 <!-- ORIGEM FUNIL (segundo) -->
 <div class="filters" style="margin-bottom:16px">
 <div class="filter-group">
-<label style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.5px;text-transform:uppercase">Mês de Cadastro</label>
+<label style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.5px;text-transform:uppercase">Mês do Lead</label>
 <div class="multi-select" id="ms-mes-origem"></div>
 </div>
 <div class="filter-group">
@@ -393,11 +393,17 @@ document.getElementById('loading').style.display = 'none';
 }
 }
 // ── Helpers ────────────────────────────────────────────────────────────────────
-// Mês do lead: usa Data Entrada Clint (W) se preenchida, senão usa Data Cadastro (P)
+// Mês do lead: usa Data Entrada Clint (W) se preenchida, senão usa Data Cadastro (R)
 function getMesLead(r) {
 const dtClint = String(r[C.DT_CLINT]||'').trim();
 const dtCad = String(r[C.DT_CAD] ||'').trim();
 return dtClint || dtCad;
+}
+const MONTH_NAMES=['01_Janeiro','02_Fevereiro','03_Março','04_Abril','05_Maio','06_Junho','07_Julho','08_Agosto','09_Setembro','10_Outubro','11_Novembro','12_Dezembro'];
+// Label do Mês do Lead (calculado, não depende da coluna "mes de cadastro" que só existe p/ cadastros)
+function getMesLeadLabel(r) {
+const d = parseDate(getMesLead(r));
+return d ? MONTH_NAMES[d.getMonth()] : '';
 }
 function parseDate(val) {
 const s = String(val||'').trim();
@@ -451,7 +457,7 @@ populateMs('ms-mes-ativ', uniq(C.MES_ATIV), 'Todos');
 populateMs('ms-vendedor', uniq(C.DONO), 'Todos');
 populateMs('ms-origem', uniq(C.ORIG_LEAD), 'Todas');
 populateMs('ms-origemp', uniq(C.ORIG_SIST), 'Todas');
-populateMs('ms-mes-origem',uniq(C.MES_CAD), 'Todos');
+populateMs('ms-mes-origem',[...new Set(rawRows.map(getMesLeadLabel).filter(Boolean))].sort(), 'Todos');
 populateMs('ms-vend-matrix',uniq(C.DONO), 'Todos');
 populateMs('ms-orig-matrix',uniq(C.ORIG_LEAD),'Todas');
 }
@@ -472,7 +478,7 @@ function getOrigemRows() {
 try {
 const rows = getFiltered();
 if (isMsAll('ms-mes-origem')) return rows;
-return rows.filter(r => getMsValues('ms-mes-origem').has(String(r[C.MES_CAD]||'').trim()));
+return rows.filter(r => getMsValues('ms-mes-origem').has(getMesLeadLabel(r)));
 } catch(e) { return getFiltered(); }
 }
 function getMatrixFiltered() {
@@ -623,7 +629,7 @@ tbl.innerHTML=html;
 // ── Cruzamento ──────────────────────────────────────────────────────────────────
 function renderTblCruzamento(rows) {
 const MESES=['04_Abril','05_Maio','06_Junho'];
-rows = getOrigemRows().filter(r=>MESES.includes(String(r[C.MES_CAD]||'').trim()));
+rows = getOrigemRows().filter(r=>MESES.includes(getMesLeadLabel(r)));
 const leadMap={};
 rows.forEach(r=>{
 const lead=String(r[C.ORIG_LEAD]||'').trim()||'Não Informado';
